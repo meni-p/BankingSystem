@@ -41,14 +41,14 @@ def make_account_number(number="10001", name="Test User", status="A",
 # Coverage type: STATEMENT COVERAGE
 #
 # Source code decisions / branches
-#   D1: account_number["plan"] == "SP"   (True → fee=0.05 / False → fee=0.10)
-#   D2: account_number["balance"] - fee < 0  (True → log error & return / False → deduct)
+#   D1: account_number["plan"] == "SP"   (True -> fee=0.05 / False -> fee=0.10)
+#   D2: account_number["balance"] - fee < 0  (True -> log error & return / False -> deduct)
 #
 # Statement coverage requires every executable line to be hit at least once.
 # Minimum cases:
-#   SC-1  NP plan, balance sufficient    → hits D1-False, D2-False  (fee=0.10 deducted)
-#   SC-2  SP plan, balance sufficient    → hits D1-True,  D2-False  (fee=0.05 deducted)
-#   SC-3  Any plan, balance insufficient → hits D1-*, D2-True (error, no deduction)
+#   SC-1  NP plan, balance sufficient    -> hits D1-False, D2-False  (fee=0.10 deducted)
+#   SC-2  SP plan, balance sufficient    -> hits D1-True,  D2-False  (fee=0.05 deducted)
+#   SC-3  Any plan, balance insufficient -> hits D1-*, D2-True (error, no deduction)
 # ===========================================================================
 
 class TestApplyFeeStatementCoverage(unittest.TestCase):
@@ -90,7 +90,7 @@ class TestApplyFeeStatementCoverage(unittest.TestCase):
         self.assertIn("ERROR", captured.getvalue())
 
     # ------------------------------------------------------------------
-    # SC-4 (extra): SP plan, balance exactly equals fee → should succeed
+    # SC-4 (extra): SP plan, balance exactly equals fee -> should succeed
     # ------------------------------------------------------------------
     def test_sc4_sp_plan_balance_equals_fee(self):
         """SC-4: SP account_number with balance exactly $0.05 should reach $0.00 (not negative)."""
@@ -120,10 +120,14 @@ class TestApplyFeeStatementCoverage(unittest.TestCase):
 # Decisions in apply_all:
 #   D1: code == "00"  (skip end-of-session)
 #   D2: code == "01"  (withdrawal)
-#   D3: code == "04"  (deposit)
-#   D4: code == "06"  (create)
-#   D5: code == "07"  (delete)
-#   D6: else          (unknown code)
+#   D3: code == "02"  (transfer)
+#   D4: code == "03"  (paybill)
+#   D5: code == "04"  (deposit)
+#   D6: code == "05"  (create)
+#   D7: code == "06"  (delete)
+#   D8: code == "07"  (disable)
+#   D9: code == "08"  (changeplan)
+#   D10: else         (unknown code)
 #
 # Loop coverage requires:
 #   L-Zero:  loop body never executes  (empty transaction list)
@@ -131,20 +135,26 @@ class TestApplyFeeStatementCoverage(unittest.TestCase):
 #   L-Many:  loop body executes more than once
 #
 # Cases:
-#   DL-1  Empty list                 → L-Zero
-#   DL-2  Single "00" record         → L-Once, D1-True
-#   DL-3  Single withdrawal          → L-Once, D2-True
-#   DL-4  Single deposit             → L-Once, D3-True
-#   DL-5  Single create              → L-Once, D4-True
-#   DL-6  Single delete              → L-Once, D5-True
-#   DL-7  Unknown code               → L-Once, D6-True (else branch)
-#   DL-8  Mixed transactions (many)  → L-Many, multiple D branches
+#   DL-1   Empty list                 -> L-Zero
+#   DL-2   Single "00" record         -> L-Once, D1-True
+#   DL-3   Single withdrawal          -> L-Once, D2-True
+#   DL-4   Single deposit             -> L-Once, D5-True
+#   DL-5   Single create              -> L-Once, D6-True
+#   DL-6   Single delete              -> L-Once, D7-True
+#   DL-7   Unknown code               -> L-Once, D10-True
+#   DL-8   Mixed transactions (many)  -> L-Many
+#   DL-9   Withdrawal error case      -> constraint violation (no balance change)
+#   DL-10  Duplicate create           -> constraint path
+#   DL-11  Transfer                   -> D3-True
+#   DL-12  Paybill                    -> D4-True
+#   DL-13  Disable                    -> D8-True
+#   DL-14  Changeplan                 -> D9-True
 # ===========================================================================
 
 class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
 
     # ------------------------------------------------------------------
-    # DL-1: Empty transaction list → loop body never executes
+    # DL-1: Empty transaction list -> loop body never executes
     # ------------------------------------------------------------------
     def test_dl1_empty_transactions(self):
         """DL-1 (L-Zero): No transactions; account_numbers unchanged."""
@@ -153,7 +163,7 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
         self.assertAlmostEqual(result["10001"]["balance"], 200.00)
 
     # ------------------------------------------------------------------
-    # DL-2: Single end-of-session (code 00) → loop runs once, D1 True, skip
+    # DL-2: Single end-of-session (code 00) -> loop runs once, D1 True, skip
     # ------------------------------------------------------------------
     def test_dl2_single_end_of_session(self):
         """DL-2 (L-Once, D1-True): EOS record skipped; account_numbers unchanged."""
@@ -163,27 +173,27 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
         self.assertAlmostEqual(result["10001"]["balance"], 200.00)
 
     # ------------------------------------------------------------------
-    # DL-3: Single withdrawal (code 01) → loop once, D2-True
+    # DL-3: Single withdrawal (code 01) -> loop once, D2-True
     # ------------------------------------------------------------------
     def test_dl3_single_withdrawal(self):
-        """DL-3 (L-Once, D2-True): Withdrawal of $50 from $200 account_number → $150."""
+        """DL-3 (L-Once, D2-True): Withdrawal of $50 from $200 account_number -> $150."""
         account_numbers = {"10001": make_account_number("10001", balance=200.00)}
         txns = [{"code": "01", "account_number": "10001", "amount": 50.00}]
         result = apply_all(account_numbers, txns)
         self.assertAlmostEqual(result["10001"]["balance"], 149.90)
 
     # ------------------------------------------------------------------
-    # DL-4: Single deposit (code 04) → loop once, D3-True
+    # DL-4: Single deposit (code 04) -> loop once, D3-True
     # ------------------------------------------------------------------
     def test_dl4_single_deposit(self):
-        """DL-4 (L-Once, D3-True): Deposit of $75 into $200 account_number → $275."""
+        """DL-4 (L-Once, D3-True): Deposit of $75 into $200 account_number -> $275."""
         account_numbers = {"10001": make_account_number("10001", balance=200.00)}
         txns = [{"code": "04", "account_number": "10001", "amount": 75.00}]
         result = apply_all(account_numbers, txns)
         self.assertAlmostEqual(result["10001"]["balance"], 274.90)
 
     # ------------------------------------------------------------------
-    # DL-5: Single create (code 05) → loop once, D4-True
+    # DL-5: Single create (code 05) -> loop once, D6-True
     # ------------------------------------------------------------------
     def test_dl5_single_create(self):
         """DL-5 (L-Once, D4-True): New account_number 20001 created with $500."""
@@ -195,7 +205,7 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
         self.assertAlmostEqual(result["20001"]["balance"], 500.00)
 
     # ------------------------------------------------------------------
-    # DL-6: Single delete (code 06) → loop once, D5-True
+    # DL-6: Single delete (code 06) -> loop once, D7-True
     # ------------------------------------------------------------------
     def test_dl6_single_delete(self):
         """DL-6 (L-Once, D5-True): account_number 10001 deleted from account_numbers."""
@@ -205,7 +215,7 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
         self.assertNotIn("10001", result)
 
     # ------------------------------------------------------------------
-    # DL-7: Unknown transaction code → loop once, D6-True (else branch)
+    # DL-7: Unknown transaction code -> loop once, D10-True (else branch)
     # ------------------------------------------------------------------
     def test_dl7_unknown_code(self):
         """DL-7 (L-Once, D6-True/else): Unknown code logs error, account_number unchanged."""
@@ -218,8 +228,8 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
         self.assertIn("ERROR", captured.getvalue())
 
     # ------------------------------------------------------------------
-    # DL-8: Multiple mixed transactions → loop executes many times
-    # Covers: L-Many; exercises D1, D2, D3, D5 in sequence
+    # DL-8: Multiple mixed transactions -> loop executes many times
+    # Covers: L-Many; exercises D1, D2, D5, D7 in sequence
     # ------------------------------------------------------------------
     def test_dl8_multiple_mixed_transactions(self):
         """DL-8 (L-Many): EOS skip, withdrawal, deposit, delete in one pass."""
@@ -240,7 +250,7 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
         self.assertNotIn("10002", result)
 
     # ------------------------------------------------------------------
-    # DL-9: Withdrawal causing negative balance → constraint error, no deduct
+    # DL-9: Withdrawal causing negative balance -> constraint error, no deduct
     # ------------------------------------------------------------------
     def test_dl9_withdrawal_insufficient_funds(self):
         """DL-9: Withdrawal larger than balance logs error, balance unchanged."""
@@ -253,7 +263,7 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
         self.assertIn("ERROR", captured.getvalue())
 
     # ------------------------------------------------------------------
-    # DL-10: Create duplicate account_number → constraint error, original unchanged
+    # DL-10: Create duplicate account_number -> constraint error, original unchanged
     # ------------------------------------------------------------------
     def test_dl10_create_duplicate_account_number(self):
         """DL-10: Creating an already-existing account_number logs error, balance unchanged."""
@@ -265,6 +275,68 @@ class TestApplyAllDecisionLoopCoverage(unittest.TestCase):
             result = apply_all(account_numbers, txns)
         self.assertAlmostEqual(result["10001"]["balance"], 100.00)  # original unchanged
         self.assertIn("ERROR", captured.getvalue())
+
+    # ------------------------------------------------------------------
+    # DL-11: Transfer (code 02)
+    # ------------------------------------------------------------------
+    def test_dl11_transfer_valid(self):
+        """DL-11: Transfer $50 from account 10001 to 10002."""
+        account_numbers = {
+            "10001": make_account_number("10001", balance=200.00),
+            "10002": make_account_number("10002", balance=100.00),
+        }
+        txns = [{"code": "02", "account_number": "10001", "amount": 50.00, "misc": "10002"}]
+
+        result = apply_all(account_numbers, txns)
+
+        self.assertAlmostEqual(result["10001"]["balance"], 149.90)
+        self.assertAlmostEqual(result["10002"]["balance"], 150.00)
+
+
+    # ------------------------------------------------------------------
+    # DL-12: Paybill (code 03)
+    # ------------------------------------------------------------------
+    def test_dl12_paybill_valid(self):
+        """DL-12: Paybill of $40 from account 10001."""
+        account_numbers = {
+            "10001": make_account_number("10001", balance=100.00),
+        }
+        txns = [{"code": "03", "account_number": "10001", "amount": 40.00}]
+
+        result = apply_all(account_numbers, txns)
+
+        self.assertAlmostEqual(result["10001"]["balance"], 59.90)
+
+
+    # ------------------------------------------------------------------
+    # DL-13: Disable account (code 07)
+    # ------------------------------------------------------------------
+    def test_dl13_disable_account(self):
+        """DL-13: Disable account 10001."""
+        account_numbers = {
+            "10001": make_account_number("10001", status="A"),
+        }
+        txns = [{"code": "07", "account_number": "10001", "amount": 0.00}]
+
+        result = apply_all(account_numbers, txns)
+
+        self.assertEqual(result["10001"]["status"], "D")
+
+
+    # ------------------------------------------------------------------
+    # DL-14: Change plan (code 08)
+    # ------------------------------------------------------------------
+    def test_dl14_changeplan(self):
+        """DL-14: Change account plan from SP to NP."""
+        account_numbers = {
+            "10001": make_account_number("10001", plan="SP"),
+        }
+        txns = [{"code": "08", "account_number": "10001", "amount": 0.00}]
+
+        result = apply_all(account_numbers, txns)
+
+        self.assertEqual(result["10001"]["plan"], "NP")
+
 
 
 if __name__ == "__main__":
@@ -278,16 +350,16 @@ if __name__ == "__main__":
     class VerboseResult(unittest.TextTestResult):
         def addSuccess(self, test):
             super().addSuccess(test)
-            print(f"  ✅ PASS: {test.shortDescription()}")
+            print(f"   PASS: {test.shortDescription()}")
 
         def addFailure(self, test, err):
             super().addFailure(test, err)
-            print(f"  ❌ FAIL: {test.shortDescription()}")
+            print(f"   FAIL: {test.shortDescription()}")
             print(f"     {err[1]}")
 
         def addError(self, test, err):
             super().addError(test, err)
-            print(f"  💥 ERROR: {test.shortDescription()}")
+            print(f"   ERROR: {test.shortDescription()}")
             print(f"     {err[1]}")
 
     class VerboseRunner(unittest.TextTestRunner):
