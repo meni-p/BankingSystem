@@ -1,0 +1,7 @@
+login
+standard
+Jane Smith
+withdrawal
+00002
+100
+logout

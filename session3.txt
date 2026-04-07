@@ -1,0 +1,8 @@
+login
+standard
+Bushrat Zahan
+paybill
+00006
+EC
+50
+logout
