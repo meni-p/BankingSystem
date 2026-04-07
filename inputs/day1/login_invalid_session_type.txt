@@ -1,0 +1,6 @@
+login
+teller
+random
+standard
+Bushrat Zahan
+logout

@@ -1,0 +1,10 @@
+login
+standard
+John Doe
+withdrawal
+00001
+300
+withdrawal
+00001
+250
+logout

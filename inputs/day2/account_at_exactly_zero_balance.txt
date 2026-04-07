@@ -1,0 +1,7 @@
+login
+standard
+Bob Johnson
+withdrawal
+00003
+500.00
+logout

@@ -1,0 +1,7 @@
+login 
+standard
+Bushrat Zahan
+paybill
+00006
+RU
+logout

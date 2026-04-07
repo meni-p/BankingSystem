@@ -1,0 +1,19 @@
+login 
+standard
+Bushrat Zahan
+withdrawal 
+00006
+20.00
+transfer
+00006
+00001
+70.00
+paybill
+00006
+CQ
+80.00
+deposit
+00006
+200.00
+logout
+

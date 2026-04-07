@@ -1,0 +1,12 @@
+login
+standard
+Jane Smith
+transfer
+00002
+00005
+600
+transfer
+00002
+00005
+500
+logout

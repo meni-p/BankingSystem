@@ -1,0 +1,16 @@
+login
+standard
+Bushrat Zahan
+withdrawal
+00006
+abc
+withdrawal
+00006
+-50.00
+withdrawal
+00006
+10000000000000.00
+paybill
+xyz
+gibberish
+logout

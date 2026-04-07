@@ -1,0 +1,8 @@
+login 
+standard
+Bushrat Zahan
+paybill
+00006
+FI
+2500.00
+logout
