@@ -163,11 +163,25 @@ class AccountManager:
 
     def _generate_unique_account_number(self):
         """
-        Helper: generate a unique 5-digit account number not already in use.
+        Helper: generate a unique 5-digit account number based on the highest
+        existing account number plus one.
         """
-        for i in range(100000):
-            candidate = str(i).zfill(5)
-            if candidate not in self.accounts and candidate not in self.deleted_set:
-                return candidate
+        existing_numbers = [
+            int(acc_num)
+            for acc_num in self.accounts
+            if acc_num.isdigit() and int(acc_num) > 0
+        ]
+
+        next_number = max(existing_numbers, default=0) + 1
+
+        if next_number >= 100000:
+            raise RuntimeError('No available account numbers remaining.')
+
+        candidate = str(next_number).zfill(5)
+
+        if candidate in self.accounts or candidate in self.deleted_set:
+            raise RuntimeError('Unable to generate a unique account number.')
+
+        return candidate
 
         raise RuntimeError("No available account numbers remaining.")

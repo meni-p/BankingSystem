@@ -126,6 +126,7 @@ class TransactionLog:
 
         """
         record = self._build_record("05", name, account_number, amount, "SP")
+        self.transactions.append(record)
 
     def log_delete(self, account_number):
         """
