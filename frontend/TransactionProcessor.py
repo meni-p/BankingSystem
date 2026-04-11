@@ -49,7 +49,8 @@ class TransactionProcessor:
         self.account_manager = account_manager
         self.transaction_log = transaction_log
         self.transaction_file = transaction_file
-        self.scanner = input  
+        self.scanner = input
+        self.session_deposits = {}  # tracks deposits made this session
 
     def process_withdrawal(self):
         """
@@ -104,6 +105,12 @@ class TransactionProcessor:
 
         if not self.session.can_withdraw(amount):
             print(f"ERROR: Would exceed ${self.session.withdrawal_limit} session limit")
+            return
+
+        deposited = self.session_deposits.get(acc_num, 0)
+        available = account.balance - deposited
+        if amount > available:
+            print("ERROR: Withdrawal limit reached - deposited funds cannot be used this session")
             return
 
         if account.withdraw(amount):
@@ -330,6 +337,7 @@ class TransactionProcessor:
             return
 
         account.deposit(amount)
+        self.session_deposits[acc_num] = self.session_deposits.get(acc_num, 0) + amount
         self.transaction_log.log_deposit(acc_num, amount)
 
         print(f"Deposit successful. New balance: ${account.balance:.2f}")
@@ -515,6 +523,7 @@ class TransactionProcessor:
 
         self.transaction_log.write_to_file(self.transaction_file)
         self.session.logout()
+        self.session_deposits = {}
 
         print(f"Session ended. Transactions written to {self.transaction_file}")
         print("Goodbye!")
