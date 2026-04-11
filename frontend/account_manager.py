@@ -68,7 +68,7 @@ class AccountManager:
                     holder_name=holder_name,
                     balance=balance,
                     status=status,
-                    plan="SP"
+                    plan="NP"
                 )
 
     def user_exists(self, user_name):
@@ -171,4 +171,3 @@ class AccountManager:
                 return candidate
 
         raise RuntimeError("No available account numbers remaining.")
-    
