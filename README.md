@@ -1,11 +1,5 @@
 # Banking System – Transaction Processing & Validation System
 
-**Work in Progress**
-
-This project is currently under active development as part of a group assignment. It simulates a banking system that processes daily transactions and updates account data while enforcing business rules and constraints.
-
----
-
 ## Project Overview
 
 The system is designed to handle and validate various banking operations, including:
